@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Staffing Job Board</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Add 'relative' class to make this the positioning context for the button -->
+    <div class="container mx-auto max-w-5xl p-4 sm:p-8 relative">
+        
+        <!-- MOVED: Post a Job Button is now here, positioned absolutely -->
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSem4BH_HTdOBC2PcK0wgeRANudj167QCHdZwyNyYVKdp6GFdw/viewform" 
+           target="_blank" 
+           class="absolute top-4 right-4 sm:top-8 sm:right-8 bg-blue-600 text-white font-bold py-2 px-5 rounded-lg transition-colors duration-300 hover:bg-blue-700 shadow-md z-10">
+            Post a New Job
+        </a>
+
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center text-blue-800">
+                US Staffing Job Board
+            </h1>
+            <p class="text-center text-gray-600 mt-2">
+                New W2 and C2C positions posted dynamically.
+            </p>
+        </header>
+
+        <!-- NEW: Search and Filter Controls -->
+        <div class="mb-8 flex flex-col sm:flex-row gap-4">
+            <!-- Search Bar -->
+            <div class="flex-grow">
+                <label for="search-bar" class="sr-only">Search Jobs</label>
+                <input type="search" id="search-bar" placeholder="Search by title, skill, or client..."
+                       class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+            </div>
+            <!-- Filter Button -->
+            <button id="open-filters-btn"
+                    class="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg border border-blue-500 hover:bg-blue-50 shadow-sm transition-colors duration-300">
+                Filters
+            </button>
+        </div>
+
+        <!-- Loading Message -->
+        <div id="loading-message" class="text-center text-gray-600 text-lg py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2">Loading open positions...</p>
+        </div>
+
+        <!-- W2 Jobs Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-gray-800 border-b-2 border-blue-200 pb-2 mb-6">
+                W2 Positions
+            </h2>
+            <div id="w2-jobs-list" class="grid grid-cols-1 gap-6">
+                <!-- W2 Jobs will be dynamically inserted here -->
+            </div>
+        </section>
+
+        <!-- C2C Jobs Section -->
+        <section>
+            <h2 class="text-2xl font-semibold text-gray-800 border-b-2 border-green-200 pb-2 mb-6">
+                C2C Positions
+            </h2>
+            <div id="c2c-jobs-list" class_ ="grid grid-cols-1 gap-6">
+                <!-- C2C Jobs will be dynamically inserted here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- NEW: Filter Modal (Hidden by default) -->
+    <div id="filter-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Filters</h3>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="space-y-6">
+                <!-- Job Type Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="filter-w2" value="w2" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">W2</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="filter-c2c" value="c2c" class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                            <span class="ml-2 text-gray-700">C2C</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Location Filter -->
+                <div>
+                    <label for="filter-location" class="block text-sm font-medium text-gray-700">Location</label>
+                    <input type="text" id="filter-location" placeholder="e.g., Remote, Dallas"
+                           class="mt-1 w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Client Filter -->
+                <div>
+                    <label for="filter-client" class="block text-sm font-medium text-gray-700">Client</label>
+                    <input type="text" id="filter-client" placeholder="e.g., Major Bank"
+                           class="mt-1 w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-4 mt-8">
+                <button id="clear-filters-btn"
+                        class="bg-white text-gray-700 font-semibold py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors duration-300">
+                    Clear All
+                </button>
+                <button id="apply-filters-btn"
+                        class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- END OF FILTER MODAL -->
+
+
+    <!-- START OF JAVASCRIPT -->
+    <script>
+        // ==========================================================
+        // YOUR LIVE GOOGLE SCRIPT URL IS PASTED HERE:
+        // This connects the website to your Google Sheet.
+        // ==========================================================
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwnOHppSuLjfATbh8CbfaY0RghBPinqluN2bp8eMBBSH2XaSlBz6nSK2N88N-i0q-cy/exec'; 
+
+        
+        // --- Mock Data (Backup) ---
+        // This data is no longer used, but is kept as a backup in case the URL fails.
+        const MOCK_DATA = [
+            {
+                timestamp: "2025-11-12T14:30:00Z",
+                recruiterEmail: "java.hires@techsolutions.com",
+                recruiterName: "John Doe",
+                companyEmail: "hr@techsolutions.com",
+                company: "Tech Solutions Inc.",
+                title: "Senior Java Developer",
+                jobType: "W2",
+                location: "Remote (USA)",
+                salary: "$80-$90/hr W2",
+                description: "Seeking a Sr. Java Developer with 8+ years of experience...",
+                skills: "Java, Spring Boot, Microservices, AWS, SQL",
+                client: "Major Bank"
+            }
+        ];
+        // --- End of Mock Data ---
+
+
+        // Get references to all HTML elements
+        const w2JobList = document.getElementById('w2-jobs-list');
+        const c2cJobList = document.getElementById('c2c-jobs-list');
+        const loadingMessage = document.getElementById('loading-message');
+        
+        // --- NEW: Filter and Search Elements ---
+        const searchBar = document.getElementById('search-bar');
+        const openFiltersBtn = document.getElementById('open-filters-btn');
+        const filterModal = document.getElementById('filter-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const applyFiltersBtn = document.getElementById('apply-filters-btn');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const filterW2 = document.getElementById('filter-w2');
+        const filterC2C = document.getElementById('filter-c2c');
+        const filterLocation = document.getElementById('filter-location');
+        const filterClient = document.getElementById('filter-client');
+
+        // This will hold all jobs fetched from the API
+        let allJobs = [];
+
+        /**
+         * Formats a date string or Date object into a readable format.
+         * @param {string | Date} dateInput - The timestamp from the Google Sheet.
+         * @returns {string} A formatted date string (e.g., "Nov 12, 2025").
+         */
+        function formatPostedDate(dateInput) {
+            // ... (rest of function is unchanged)
+            const date = new Date(dateInput);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        /**
+         * Creates HTML for skill badges
+         * @param {string} skillsString - A comma-separated string of skills.
+         * @returns {string} HTML for the skill badges.
+         */
+        function createSkillBadges(skillsString) {
+            // ... (rest of function is unchanged)
+            if (!skillsString) return ''; // Return empty if no skills listed
+            
+            return skillsString.split(',')
+                .map(skill => skill.trim())
+                .filter(skill => skill.length > 0) // Remove any empty strings
+                .map(skill => `<span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">${skill}</span>`)
+                .join(''); // Join all badges into a single string
+        }
+
+        /**
+         * Toggles the job description between a short and full version.
+         * @param {HTMLElement} button - The "Read More" / "Read Less" button that was clicked.
+         */
+        function toggleDescription(button) {
+            // ... (rest of function is unchanged)
+            const descElement = button.previousElementSibling; // The <p> tag right before the button
+            const state = button.getAttribute('data-state');
+
+            if (state === 'short') {
+                // Expand it
+                const fullText = button.getAttribute('data-full-text');
+                descElement.innerHTML = fullText;
+                button.innerText = 'Read Less';
+                button.setAttribute('data-state', 'full');
+            } else {
+                // Collapse it
+                const shortText = button.getAttribute('data-short-text');
+                descElement.innerHTML = shortText;
+                button.innerText = 'Read More';
+                button.setAttribute('data-state', 'short');
+            }
+        }
+
+        /**
+         * Creates the HTML string for a single job card.
+         * @param {object} job - The job object from your sheet.
+         * @returns {string} The HTML for the job card.
+         */
+        function createJobCard(job) {
+            // ... (rest of function is unchanged, same as before)
+            const postedDate = formatPostedDate(job.timestamp);
+            
+            // Create the "Apply Now" mailto link using the Recruiter Email
+            const mailtoLink = `mailto:${job.recruiterEmail}?subject=Application for: ${job.title} at ${job.company}`;
+            
+            // Create the skill badges
+            const skillsHTML = createSkillBadges(job.skills);
+
+            // --- Truncate long descriptions ---
+            let descriptionHTML = '';
+            const truncationLength = 150;
+            // Handle newlines in the description for proper HTML rendering
+            const formattedDescription = job.description.replace(/\n/g, '<br>');
+
+            if (job.description.length > truncationLength) {
+                descriptionHTML = `
+                    <p class="text-gray-700" style="word-wrap: break-word;">
+                        ${formattedDescription.substring(0, truncationLength)}...
+                    </p>
+                    <button onclick="toggleDescription(this)" 
+                            data-full-text="${formattedDescription.replace(/"/g, '&quot;')}" 
+                            data-short-text="${formattedDescription.substring(0, truncationLength)}..."
+                            data-state="short"
+                            class="text-blue-600 hover:underline text-sm font-medium my-3">
+                        Read More
+                    </button>
+                `;
+            } else {
+                descriptionHTML = `<p class="text-gray-700 mb-5" style="word-wrap: break-word;">${formattedDescription}</p>`;
+            }
+            // --- END OF SECTION ---
+
+            return `
+                <div class="bg-white rounded-lg shadow-md p-6 transition-shadow duration-300 hover:shadow-lg">
+                    <!-- Card Header: Title and Posted Date -->
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-3">
+                        <h3 class="text-xl font-bold text-blue-700">
+                            ${job.title}
+                        </h3>
+                        <span class="text-sm text-gray-500 mt-2 sm:mt-0">
+                            Posted: ${postedDate}
+                        </span>
+                    </div>
+                    
+                    <!-- Company, Client, and Location -->
+                    <div class="mb-4 space-y-1">
+                        <p class="text-md font-semibold text-gray-800">${job.company} 
+                            ${job.client ? `<span class="text-gray-600 font-medium">(Client: ${job.client})</span>` : ''}
+                        </p>
+                        <p class="text-sm text-gray-600">${job.location}</p>
+                        ${job.salary ? `<p class,"text-sm font-medium text-green-700">Rate: ${job.salary}</p>` : ''}
+                    </div>
+
+                    <!-- Description (Now with Read More) -->
+                    ${descriptionHTML}
+
+                    <!-- Skills -->
+                    ${skillsHTML ? `<div class="mb-5">${skillsHTML}</div>` : ''}
+
+                    <!-- Footer: Apply Button and Recruiter Name -->
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center pt-4 border-t border-gray-100">
+                        <a href="${mailtoLink}" 
+                           class="inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg transition-colors duration-300 hover:bg-green-700 text-center">
+                            Apply Now (Email)
+                        </a>
+                        ${job.recruiterName ? `<p class="text-sm text-gray-600 mt-3 sm:mt-0">Contact: ${job.recruiterName}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * NEW: This function filters and renders jobs based on search and filter inputs.
+         */
+        function renderJobs() {
+            // Get all filter values
+            const searchTerm = searchBar.value.toLowerCase();
+            const showW2 = filterW2.checked;
+            const showC2C = filterC2C.checked;
+            const locationFilter = filterLocation.value.toLowerCase();
+            const clientFilter = filterClient.value.toLowerCase();
+
+            // Filter the 'allJobs' array
+            const filteredJobs = allJobs.filter(job => {
+                // 1. Search Term Filter
+                const matchesSearch = !searchTerm ||
+                    (job.title && job.title.toLowerCase().includes(searchTerm)) ||
+                    (job.company && job.company.toLowerCase().includes(searchTerm)) ||
+                    (job.skills && job.skills.toLowerCase().includes(searchTerm)) ||
+                    (job.client && job.client.toLowerCase().includes(searchTerm)) ||
+                    (job.description && job.description.toLowerCase().includes(searchTerm));
+                
+                // 2. Job Type Filter
+                // If neither is checked, show all (or both are checked)
+                const matchesJobType = (!showW2 && !showC2C) || (showW2 && showC2C) ||
+                    (showW2 && job.jobType.toLowerCase().includes('w2')) ||
+                    (showC2C && job.jobType.toLowerCase().includes('c2c'));
+                
+                // 3. Location Filter
+                const matchesLocation = !locationFilter || 
+                    (job.location && job.location.toLowerCase().includes(locationFilter));
+                
+                // 4. Client Filter
+                const matchesClient = !clientFilter || 
+                    (job.client && job.client.toLowerCase().includes(clientFilter));
+
+                // Return true only if all filters match
+                return matchesSearch && matchesJobType && matchesLocation && matchesClient;
+            });
+
+            // Now, display the filtered jobs
+            displayFilteredJobs(filteredJobs);
+        }
+
+        /**
+         * Renders the list of jobs onto the page.
+         * (This was formerly 'displayJobs')
+         * @param {Array<object>} jobs - An array of *filtered* job objects.
+         */
+        function displayFilteredJobs(jobs) {
+            // Hide the loading message
+            loadingMessage.style.display = 'none';
+
+            // Clear the existing lists
+            w2JobList.innerHTML = '';
+            c2cJobList.innerHTML = '';
+
+            let w2Count = 0;
+            let c2cCount = 0;
+
+            // Loop through each filtered job and create the HTML
+            jobs.forEach(job => {
+                // Only display the job if it has a recruiter email.
+                if (job.recruiterEmail) { 
+                    const jobCardHTML = createJobCard(job);
+
+                    // Sort the job into the correct list
+                    if (job.jobType && job.jobType.toLowerCase().includes('w2')) {
+                        w2JobList.innerHTML += jobCardHTML;
+                        w2Count++;
+                    } else if (job.jobType && job.jobType.toLowerCase().includes('c2c')) {
+                        c2cJobList.innerHTML += jobCardHTML;
+                        c2cCount++;
+                    }
+                }
+            });
+
+            // Show a message if no jobs are found in a category
+            if (w2Count === 0) {
+                w2JobList.innerHTML = '<p class="text-gray-600 italic">No W2 positions match your criteria.</p>';
+            }
+            if (c2cCount === 0) {
+                c2cJobList.innerHTML = '<p class="text-gray-600 italic">No C2C positions match your criteria.</p>';
+            }
+        }
+
+        /**
+         * Fetches job data from the Google Apps Script URL.
+         */
+        async function fetchRealJobs() {
+            try {
+                const response = await fetch(WEB_APP_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allJobs = await response.json(); // Store all jobs
+                renderJobs(); // Render them for the first time
+            } catch (error) {
+                console.error('Error fetching real jobs:', error);
+                loadingMessage.innerHTML = `<p class="text-red-600">Failed to load jobs. Please check the WEB_APP_URL in the script.</p>`;
+            }
+        }
+        
+        /**
+         * Simulates fetching jobs using mock data.
+         */
+        function fetchMockJobs() {
+            console.warn("Using mock data for example. This is a backup.");
+            // Simulate a network delay (1 second)
+            setTimeout(() => {
+                allJobs = MOCK_DATA; // Store mock jobs
+                renderJobs(); // Render them
+            }, 1000);
+        }
+
+        // --- NEW: Event Listeners for Search and Filters ---
+
+        // 1. Search bar (filters in real-time)
+        searchBar.addEventListener('input', renderJobs);
+
+        // 2. Filter Modal controls
+        openFiltersBtn.addEventListener('click', () => {
+            filterModal.classList.remove('hidden');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            filterModal.classList.add('hidden');
+        });
+
+        applyFiltersBtn.addEventListener('click', () => {
+            renderJobs(); // Re-render with new filters
+            filterModal.classList.add('hidden'); // Close modal
+        });
+
+        clearFiltersBtn.addEventListener('click', () => {
+            // Reset all filter inputs
+            filterW2.checked = false;
+            filterC2C.checked = false;
+            filterLocation.value = '';
+            filterClient.value = '';
+            
+            renderJobs(); // Re-render with no filters
+            filterModal.classList.add('hidden'); // Close modal
+        });
+
+        // 3. Close modal if clicking on the background overlay
+        filterModal.addEventListener('click', (e) => {
+            if (e.target === filterModal) {
+                filterModal.classList.add('hidden');
+            }
+        });
+
+
+        // --- Main execution ---
+        // This logic runs when the page has finished loading.
+        document.addEventListener('DOMContentLoaded', () => {
+            if (WEB_APP_URL) {
+                // If the user has pasted their URL, fetch the real data.
+                fetchRealJobs();
+            } else {
+                // Otherwise, use the mock data for this example.
+                fetchMockJobs();
+            }
+        });
+
+    </script>
+</body>
+</html>
