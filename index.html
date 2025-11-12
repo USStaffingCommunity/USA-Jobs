@@ -263,7 +263,7 @@
             const postedDate = formatPostedDate(job.timestamp);
             
             // Create the "Apply Now" mailto link using the Recruiter Email
-            const mailtoLink = `mailto:${job.recruiterEmail}?subject=Application for: ${job.title} at ${job.company}`;
+            const mailtoLink = `mailto:${job.recruiterEmail}?subject=Application for: ${job.title} at ${job.company} Posted on Staffing Community Portal`;
             
             // Create the skill badges
             const skillsHTML = createSkillBadges(job.skills);
@@ -498,4 +498,5 @@
     </script>
 </body>
 </html>
+
 
